@@ -1,10 +1,11 @@
 package extract_pathes
 
 import (
-	S "do-swagger/structs"
 	"reflect"
 	"sort"
 	"testing"
+
+	S "github.com/Tacostrophe/do-swagger/structs"
 )
 
 func TestExtractPathes(t *testing.T) {

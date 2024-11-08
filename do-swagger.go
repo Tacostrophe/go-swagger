@@ -1,5 +1,5 @@
-package do_swagger
+package main
 
 func main() {
-    
+
 }
