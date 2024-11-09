@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	S "github.com/Tacostrophe/do-swagger/structs"
+	S "github.com/Tacostrophe/go-swagger/structs"
 )
 
 func TestExtractPathes(t *testing.T) {

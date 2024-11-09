@@ -3,7 +3,7 @@ package extract_pathes
 import (
 	"errors"
 
-	S "github.com/Tacostrophe/do-swagger/structs"
+	S "github.com/Tacostrophe/go-swagger/structs"
 )
 
 func ExtractPathes(swagger map[string]map[string]map[string]interface{}) ([]S.PathMethod, error) {
