@@ -6,14 +6,12 @@ import (
 	S "github.com/Tacostrophe/go-swagger/structs"
 )
 
-func ExtractPathes(swagger map[string]map[string]map[string]interface{}) ([]S.PathMethod, error) {
-	pathes, ok := swagger["paths"]
-	if !ok {
-		return []S.PathMethod{}, errors.New("swagger must have pathes")
-	}
-
+func ExtractPathes(swagger S.Swagger) ([]S.PathMethod, error) {
 	var pathesMethods []S.PathMethod
-	for path, methods := range pathes {
+	if len(swagger.Paths) == 0 {
+		return []S.PathMethod{}, errors.New("swagger has no paths in it")
+	}
+	for path, methods := range swagger.Paths {
 		for method := range methods {
 			currentPathMethod := S.PathMethod{
 				Path:   path,

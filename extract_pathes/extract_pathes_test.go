@@ -54,18 +54,18 @@ func TestExtractPathes(t *testing.T) {
 	}
 
 	cases := []struct {
-		in   map[string]map[string]map[string]interface{}
+		in   S.Swagger
 		want []S.PathMethod
 	}{
 		{
-			map[string]map[string]map[string]interface{}{
-				"paths": {},
+			S.Swagger{
+				Paths: map[string]map[string]interface{}{},
 			},
 			[]S.PathMethod{},
 		},
 		{
-			map[string]map[string]map[string]interface{}{
-				"paths": oneEndpointMap,
+			S.Swagger{
+				Paths: oneEndpointMap,
 			},
 			[]S.PathMethod{
 				{
@@ -75,8 +75,8 @@ func TestExtractPathes(t *testing.T) {
 			},
 		},
 		{
-			map[string]map[string]map[string]interface{}{
-				"paths": coupleEndpointMap,
+			S.Swagger{
+				Paths: coupleEndpointMap,
 			},
 			[]S.PathMethod{
 				{
@@ -106,7 +106,7 @@ func TestExtractPathes(t *testing.T) {
 		}
 
 		comparePathMethods := func(i, j int) bool {
-			return got[i].Path < got[j].Path && got[i].Method < got[j].Method
+			return got[i].Path < got[j].Path || got[i].Method < got[j].Method
 		}
 		sort.Slice(got[:], comparePathMethods)
 		sort.Slice(currentCase.want[:], comparePathMethods)
