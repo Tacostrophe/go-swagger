@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
@@ -10,7 +12,14 @@ import (
 func main() {
 	// get somehow path/to/swagger.json
 	// get somehow name of a result file
-	path := "/home/tacostrophe/Downloads/swagger.json"
+	if len(os.Args) < 2 {
+		log.Fatal("path/to/json as first argument is required")
+	}
+	path := os.Args[1]
+	if !strings.HasSuffix(path, ".json") {
+		log.Fatal("file must be a json")
+	}
+
 	swagger, err := RS.ReadSwagger(path)
 	if err != nil {
 		log.Fatal(err)
