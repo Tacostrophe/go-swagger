@@ -3,35 +3,33 @@ package main
 import (
 	"log"
 	"os"
-	"strings"
 
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
+	IC "github.com/Tacostrophe/go-swagger/init_context"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
 )
 
 func main() {
 	// get somehow path/to/swagger.json
 	// get somehow name of a result file
-	if len(os.Args) < 2 {
-		log.Fatal("path/to/json as first argument is required")
-	}
-	path := os.Args[1]
-	if !strings.HasSuffix(path, ".json") {
-		log.Fatal("file must be a json")
-	}
-
-	swagger, err := RS.ReadSwagger(path)
+	ctx, err := IC.InitContext(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// log.Println("swagger:", swagger)
 
-	// extract pathes
+	// read swagger
+	swagger, err := RS.ReadSwagger(ctx.IncomeSwaggerPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// extract pathes from swagger
 	pathesMethodes, err := EP.ExtractPathes(swagger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("pathesMethodes:", pathesMethodes)
+	log.Printf("pathesMethodes: %+v", pathesMethodes)
+
 	// ask which path to keep
 
 	// filter pathes in swagger
