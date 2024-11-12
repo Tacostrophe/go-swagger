@@ -6,6 +6,7 @@ import (
 	"os"
 
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
+	FP "github.com/Tacostrophe/go-swagger/filter_pathes_by_idxes"
 	IC "github.com/Tacostrophe/go-swagger/init_context"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
 	RP "github.com/Tacostrophe/go-swagger/request_pathes_to_keep"
@@ -39,13 +40,18 @@ func main() {
 	}
 
 	// request pathes to keep
-	pathesToKeep, err := RP.RequestPathesToKeep(pathesStr)
+	pathesIdxesToKeep, err := RP.RequestPathesToKeep(pathesStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pathesIdxesToKeep)
+
+	// filter pathes in swagger
+	pathesToKeep, err := FP.FilterPathesByIdxes(pathesMethodes, pathesIdxesToKeep)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(pathesToKeep)
-
-	// filter pathes in swagger
 
 	// write swagger into a file
 }
