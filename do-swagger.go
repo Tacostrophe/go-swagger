@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
 	IC "github.com/Tacostrophe/go-swagger/init_context"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
+	TS "github.com/Tacostrophe/go-swagger/transform_pathes_to_string"
 )
 
 func main() {
@@ -28,7 +30,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("pathesMethodes: %+v", pathesMethodes)
+
+	pathesStr, _ := TS.TransformPathesToString(pathesMethodes)
+	fmt.Println(pathesStr)
 
 	// ask which path to keep
 
