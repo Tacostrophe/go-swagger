@@ -8,6 +8,7 @@ import (
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
 	IC "github.com/Tacostrophe/go-swagger/init_context"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
+	RP "github.com/Tacostrophe/go-swagger/request_pathes_to_keep"
 	TS "github.com/Tacostrophe/go-swagger/transform_pathes_to_string"
 )
 
@@ -32,10 +33,17 @@ func main() {
 	}
 
 	// transform array of pathes to human readable list with idx
-	pathesStr, _ := TS.TransformPathesToString(pathesMethodes)
-	fmt.Println(pathesStr)
+	pathesStr, err := TS.TransformPathesToString(pathesMethodes)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// ask which path to keep
+	// request pathes to keep
+	pathesToKeep, err := RP.RequestPathesToKeep(pathesStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pathesToKeep)
 
 	// filter pathes in swagger
 
