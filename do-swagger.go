@@ -31,6 +31,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// transform array of pathes to human readable list with idx
 	pathesStr, _ := TS.TransformPathesToString(pathesMethodes)
 	fmt.Println(pathesStr)
 
