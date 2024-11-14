@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -12,6 +11,7 @@ import (
 	RP "github.com/Tacostrophe/go-swagger/request_pathes_to_keep"
 	TS "github.com/Tacostrophe/go-swagger/transform_pathes_to_string"
 	US "github.com/Tacostrophe/go-swagger/update_swagger_pathes"
+	WS "github.com/Tacostrophe/go-swagger/wright_swagger"
 )
 
 func main() {
@@ -56,7 +56,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("swagger:\n%+v", swagger)
 
 	// write swagger into a file
+	resultFileName, err := WS.WrightSwagger(swagger)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("result swagger saved in %s", resultFileName)
 }
