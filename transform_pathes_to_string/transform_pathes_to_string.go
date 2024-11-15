@@ -11,13 +11,8 @@ func TransformPathesToString(pathesMethodes []S.PathMethod) (string, error) {
 	var pathesStrBuilder strings.Builder
 	for idx, pathMethod := range pathesMethodes {
 		idxString := strconv.Itoa(idx)
-		pathesStrBuilder.Write([]byte(idxString))
-		pathesStrBuilder.Write([]byte(" "))
-		pathesStrBuilder.Write([]byte(strings.ToUpper(pathMethod.Method)))
-		pathesStrBuilder.Write([]byte(" "))
-		pathesStrBuilder.Write([]byte(pathMethod.Path))
-		pathesStrBuilder.Write([]byte(" "))
-		pathesStrBuilder.Write([]byte("\n"))
+		currentPathStr := idxString + " " + strings.ToUpper(pathMethod.Method) + " " + pathMethod.Path + "\n"
+		pathesStrBuilder.Write([]byte(currentPathStr))
 	}
 
 	return pathesStrBuilder.String(), nil
