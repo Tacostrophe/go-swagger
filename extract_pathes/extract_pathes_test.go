@@ -52,6 +52,105 @@ func TestExtractPathes(t *testing.T) {
 		},
 	}
 
+	multipleEndpointMap := map[string]map[string]interface{}{
+		"path/2": {
+			"post": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+			"delete": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+		},
+		"path/3": {
+			"patch": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"201": {
+						"description": "OK",
+					},
+				},
+			},
+			"get": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+		},
+		"path/1": {
+			"post": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"201": {
+						"description": "OK",
+					},
+				},
+			},
+			"delete": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+			"patch": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+			"get": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+		},
+		"path/4": {
+			"post": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"201": {
+						"description": "OK",
+					},
+				},
+			},
+			"delete": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+			"get": map[string]interface{}{
+				"parameters": []interface{}{},
+				"responses": map[string]map[string]string{
+					"200": {
+						"description": "OK",
+					},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		in   S.Swagger
 		want []S.PathMethod
@@ -88,6 +187,57 @@ func TestExtractPathes(t *testing.T) {
 				},
 				{
 					Path:   "path/2",
+					Method: "post",
+				},
+			},
+		},
+		{
+			S.Swagger{
+				Paths: multipleEndpointMap,
+			},
+			[]S.PathMethod{
+				{
+					Path:   "path/1",
+					Method: "delete",
+				},
+				{
+					Path:   "path/1",
+					Method: "get",
+				},
+				{
+					Path:   "path/1",
+					Method: "patch",
+				},
+				{
+					Path:   "path/1",
+					Method: "post",
+				},
+				{
+					Path:   "path/2",
+					Method: "delete",
+				},
+				{
+					Path:   "path/2",
+					Method: "post",
+				},
+				{
+					Path:   "path/3",
+					Method: "get",
+				},
+				{
+					Path:   "path/3",
+					Method: "patch",
+				},
+				{
+					Path:   "path/4",
+					Method: "delete",
+				},
+				{
+					Path:   "path/4",
+					Method: "get",
+				},
+				{
+					Path:   "path/4",
 					Method: "post",
 				},
 			},

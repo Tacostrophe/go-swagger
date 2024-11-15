@@ -23,7 +23,10 @@ func ExtractPathes(swagger S.Swagger) ([]S.PathMethod, error) {
 	}
 
 	sort.Slice(pathesMethods, func(i, j int) bool {
-		return pathesMethods[i].Path < pathesMethods[j].Path || pathesMethods[i].Method < pathesMethods[j].Method
+		if pathesMethods[i].Path == pathesMethods[j].Path {
+			return pathesMethods[i].Method < pathesMethods[j].Method
+		}
+		return pathesMethods[i].Path < pathesMethods[j].Path
 	})
 
 	return pathesMethods, nil
