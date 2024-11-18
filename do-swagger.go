@@ -10,7 +10,7 @@ import (
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
 	RP "github.com/Tacostrophe/go-swagger/request_pathes_to_keep"
 	TS "github.com/Tacostrophe/go-swagger/transform_pathes_to_string"
-	US "github.com/Tacostrophe/go-swagger/update_swagger_pathes"
+	US "github.com/Tacostrophe/go-swagger/update_swagger"
 	WS "github.com/Tacostrophe/go-swagger/wright_swagger"
 )
 
@@ -52,7 +52,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	swagger, err = US.UpdateSwaggerPathes(swagger, pathesToKeep)
+	swagger, err = US.UpdateSwagger(swagger, pathesToKeep)
 	if err != nil {
 		log.Fatal(err)
 	}
