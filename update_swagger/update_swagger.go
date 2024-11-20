@@ -1,6 +1,9 @@
 package update_swagger
 
 import (
+	"errors"
+	"sort"
+
 	S "github.com/Tacostrophe/go-swagger/structs"
 )
 
@@ -45,11 +48,22 @@ func filterTags(swaggerTags []interface{}, swaggerPathes map[string]map[string]i
 		filteredSwaggerTags = append(filteredSwaggerTags, tag)
 	}
 
+	sort.Slice(filteredSwaggerTags, func(i, j int) bool {
+		return filteredSwaggerTags[i]["name"].(string) < filteredSwaggerTags[j]["name"].(string)
+	})
+
 	return
 }
 
 func UpdateSwagger(swagger map[string]interface{}, pathesToKeep []S.PathMethod) (map[string]interface{}, error) {
-	incomeSwaggerPathes := swagger["paths"].(map[string]interface{})
+	incomeSwaggerPathesI, ok := swagger["paths"]
+	if !ok {
+		return map[string]interface{}{}, errors.New("swagger to update must have pathes")
+	}
+	incomeSwaggerPathes, ok := incomeSwaggerPathesI.(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{}, errors.New("didn't manage to cast swagger pathes to map")
+	}
 	swaggerPathes := filterPathes(incomeSwaggerPathes, pathesToKeep)
 	swagger["paths"] = swaggerPathes
 
