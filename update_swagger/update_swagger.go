@@ -55,6 +55,56 @@ func filterTags(swaggerTags []interface{}, swaggerPathes map[string]map[string]i
 	return
 }
 
+func getRefsFromMap(currentMap map[string]interface{}) (refs map[string]bool) {
+	refs = make(map[string]bool)
+	if len(currentMap) == 0 {
+		return
+	}
+
+	for key, value := range currentMap {
+		if key == "$ref" {
+			refs[value.(string)] = true
+			continue
+		}
+
+		subMap, isMap := value.(map[string]interface{})
+		if !isMap {
+			continue
+		}
+
+		subMapRefs := getRefsFromMap(subMap)
+		for refName := range subMapRefs {
+			refs[refName] = true
+		}
+	}
+
+	return
+}
+
+func getRefsFromPathes(pathes map[string]map[string]interface{}) (refs map[string]bool) {
+	refs = make(map[string]bool)
+	for _, methods := range pathes {
+		pathRefs := getRefsFromMap(methods)
+		for refName := range pathRefs {
+			refs[refName] = true
+		}
+	}
+
+	return
+}
+
+func filterComponentsSchemas(swaggerComponentsSchemas map[string]interface{}, swaggerPathes map[string]map[string]interface{}) (filteredSwaggerComponentsSchemas map[string]interface{}) {
+	filteredSwaggerComponentsSchemas = make(map[string]interface{})
+	refs := getRefsFromPathes(swaggerPathes)
+	for schemaName, schema := range swaggerComponentsSchemas {
+		refName := "#/components/schemas/" + schemaName
+		if _, hasRef := refs[refName]; hasRef {
+			filteredSwaggerComponentsSchemas[schemaName] = schema
+		}
+	}
+	return
+}
+
 func UpdateSwagger(swagger map[string]interface{}, pathesToKeep []S.PathMethod) (map[string]interface{}, error) {
 	incomeSwaggerPathesI, ok := swagger["paths"]
 	if !ok {
@@ -71,6 +121,16 @@ func UpdateSwagger(swagger map[string]interface{}, pathesToKeep []S.PathMethod) 
 	if len(incomeSwaggerTags) > 0 {
 		swaggerTags := filterTags(incomeSwaggerTags, swaggerPathes)
 		swagger["tags"] = swaggerTags
+	}
+
+	if incomeSwaggerComponents, hasComponents := swagger["components"].(map[string]interface{}); hasComponents {
+		if incomeSwaggerComponentsSchemas, hasSchemas := incomeSwaggerComponents["schemas"].(map[string]interface{}); hasSchemas {
+			if len(incomeSwaggerComponentsSchemas) > 0 {
+				filteredSwaggerComponentsSchemas := filterComponentsSchemas(incomeSwaggerComponentsSchemas, swaggerPathes)
+				incomeSwaggerComponents["schemas"] = filteredSwaggerComponentsSchemas
+				swagger["components"] = incomeSwaggerComponents
+			}
+		}
 	}
 
 	return swagger, nil
