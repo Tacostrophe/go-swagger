@@ -15,6 +15,18 @@ func testSwaggerFactory() map[string]interface{} {
 	return map[string]interface{}{
 		"paths": map[string]interface{}{
 			"/path1": map[string]interface{}{
+				"requestBody": map[string]interface{}{
+					"content": map[string]interface{}{
+						"application/json": map[string]interface{}{
+							"schema": map[string]interface{}{
+								"type": "array",
+								"items": map[string]interface{}{
+									"$ref": "#/components/schemas/ref2",
+								},
+							},
+						},
+					},
+				},
 				"get": map[string]interface{}{
 					"tags": []interface{}{
 						"tag1",
@@ -28,6 +40,13 @@ func testSwaggerFactory() map[string]interface{} {
 			},
 			"/path5": map[string]interface{}{
 				"delete": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"in":       "path",
+						"requried": true,
+						"schema": map[string]interface{}{
+							"$ref": "#/components/schemas/ref1",
+						},
+					},
 					"tags": []interface{}{
 						"tag5",
 					},
@@ -71,9 +90,35 @@ func testSwaggerFactory() map[string]interface{} {
 					},
 				},
 				"patch": map[string]interface{}{
+					"responses": map[string]interface{}{
+						"500": map[string]interface{}{
+							"description": "Internal Server Error",
+							"content": map[string]interface{}{
+								"application/json": map[string]interface{}{
+									"schema": map[string]interface{}{
+										"$ref": "#/components/schemas/ref3",
+									},
+								},
+							},
+						},
+					},
 					"tags": []interface{}{
 						"tag3",
 					},
+				},
+			},
+		},
+		"components": map[string]interface{}{
+			"schemas": map[string]interface{}{
+				"ref1": map[string]interface{}{
+					"type": "object",
+				},
+				"ref2": map[string]interface{}{
+					"type":  "array",
+					"title": "ref2Name",
+				},
+				"ref3": map[string]interface{}{
+					"type": "string",
 				},
 			},
 		},
@@ -132,6 +177,13 @@ func TestUpdateSwagger(t *testing.T) {
 						},
 					},
 				},
+				"components": map[string]interface{}{
+					"schemas": map[string]interface{}{
+						"ref1": map[string]interface{}{
+							"type": "object",
+						},
+					},
+				},
 				"tags": []map[string]interface{}{
 					{
 						"name": "tag5",
@@ -170,6 +222,16 @@ func TestUpdateSwagger(t *testing.T) {
 						},
 					},
 				},
+				"components": map[string]interface{}{
+					"schemas": map[string]interface{}{
+						"ref1": map[string]interface{}{
+							"type": "object",
+						},
+						"ref3": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
 				"tags": []map[string]interface{}{
 					{
 						"name": "tag3",
@@ -185,7 +247,7 @@ func TestUpdateSwagger(t *testing.T) {
 		},
 	}
 
-	for _, currentCase := range cases {
+	for currentCaseIdx, currentCase := range cases {
 		got, err := UpdateSwagger(currentCase.in.swagger, currentCase.in.pathesToKeep)
 
 		gotLen := len(got)
@@ -245,6 +307,54 @@ func TestUpdateSwagger(t *testing.T) {
 					wantTagName,
 					gotTagName,
 				)
+			}
+		}
+
+		wantComponentsI := currentCase.want["components"]
+		if wantComponents, ok := wantComponentsI.(map[string]interface{}); ok {
+			wantSchemasI := wantComponents["schemas"]
+			wantSchemas, ok := wantSchemasI.(map[string]interface{})
+			if !ok {
+				t.Errorf("Something went wrong with case %d: cant extract schemas", currentCaseIdx)
+			}
+
+			gotComponentsI, ok := got["components"]
+			if !ok {
+				t.Errorf("Expected to have components in result's swagger, but got nogthing in case %d", currentCaseIdx)
+			}
+			gotComponents, ok := gotComponentsI.(map[string]interface{})
+			if !ok {
+				t.Errorf("Components in result's swagger has wrong type in case %d", currentCaseIdx)
+			}
+
+			gotSchemasI, ok := gotComponents["schemas"]
+			if !ok {
+				t.Errorf("Expected to have schemas in result's swagger, but got nothing in case %d", currentCaseIdx)
+			}
+			gotSchemas, ok := gotSchemasI.(map[string]interface{})
+			if !ok {
+				t.Errorf("Schemas in result's swagger has wrong type in case %d", currentCaseIdx)
+			}
+			wantSchemasLen := len(wantSchemas)
+			gotSchemasLen := len(gotSchemas)
+			if gotSchemasLen != wantSchemasLen {
+				t.Errorf(
+					"Testing UpdateSwagger: case %d\nexpected schemas length: %v\ngot schemas length %v",
+					currentCaseIdx,
+					wantSchemasLen,
+					gotSchemasLen,
+				)
+			}
+
+			for wantSchemaName := range wantSchemas {
+				_, hasSchemaName := gotSchemas[wantSchemaName]
+				if !hasSchemaName {
+					t.Errorf(
+						"Testing UpdateSwagger: case %d\nexpected result to have schema %s, but it doesn't",
+						currentCaseIdx,
+						wantSchemaName,
+					)
+				}
 			}
 		}
 	}
