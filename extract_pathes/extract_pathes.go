@@ -13,20 +13,29 @@ func ExtractPathes(swagger S.Swagger) ([]S.PathMethod, error) {
 		return []S.PathMethod{}, errors.New("swagger has no paths in it")
 	}
 	for path, methods := range swagger.Paths {
-		for method := range methods {
+		for methodName, method := range methods {
 			currentPathMethod := S.PathMethod{
 				Path:   path,
-				Method: method,
+				Method: methodName,
+			}
+			if tags, hasTags := method.(map[string]interface{})["tags"]; hasTags {
+				if tagsArr := tags.([]interface{}); len(tagsArr) > 0 {
+					firstTag := tagsArr[0].(string)
+					currentPathMethod.FirstTag = firstTag
+				}
 			}
 			pathesMethods = append(pathesMethods, currentPathMethod)
 		}
 	}
 
 	sort.Slice(pathesMethods, func(i, j int) bool {
-		if pathesMethods[i].Path == pathesMethods[j].Path {
-			return pathesMethods[i].Method < pathesMethods[j].Method
+		if pathesMethods[i].FirstTag == pathesMethods[j].FirstTag {
+			if pathesMethods[i].Path == pathesMethods[j].Path {
+				return pathesMethods[i].Method < pathesMethods[j].Method
+			}
+			return pathesMethods[i].Path < pathesMethods[j].Path
 		}
-		return pathesMethods[i].Path < pathesMethods[j].Path
+		return pathesMethods[i].FirstTag < pathesMethods[j].FirstTag
 	})
 
 	return pathesMethods, nil
