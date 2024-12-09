@@ -33,7 +33,10 @@ func filterTags(swaggerTags []interface{}, swaggerPathes map[string]map[string]i
 	tagsToKeepMap := make(map[string]map[string]interface{})
 	for _, path := range swaggerPathes {
 		for _, method := range path {
-			methodTagsNames := method.(map[string]interface{})["tags"].([]interface{})
+			methodTagsNames, ok := method.(map[string]interface{})["tags"].([]interface{})
+			if !ok {
+				continue
+			}
 			for _, tagName := range methodTagsNames {
 				tag, ok := tagsMap[tagName.(string)]
 				if ok {
