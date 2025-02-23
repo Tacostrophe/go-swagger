@@ -1,4 +1,4 @@
-package main
+package old_main
 
 import (
 	"log"
@@ -14,7 +14,7 @@ import (
 	WS "github.com/Tacostrophe/go-swagger/wright_swagger"
 )
 
-func main() {
+func OldMain() {
 	// get somehow path/to/swagger.json
 	// get somehow name of a result file
 	ctx, err := IC.InitContext(os.Args)
