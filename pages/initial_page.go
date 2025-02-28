@@ -5,7 +5,6 @@ import (
 
 	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
 	RS "github.com/Tacostrophe/go-swagger/read_swagger"
-	TS "github.com/Tacostrophe/go-swagger/transform_pathes_to_string"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -55,14 +54,14 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			// transform array of pathes to human readable list with idx
-			pathes, err := TS.TransformPathesToString(pathesMethodes)
-			if err != nil {
-				m.tip = fmt.Sprintf("error: can't transform pathes to string: %s", err.Error())
-				m.textInput.Reset()
-				return m, nil
-			}
+			// pathes, err := TS.TransformPathesToString(pathesMethodes)
+			// if err != nil {
+			// 	m.tip = fmt.Sprintf("error: can't transform pathes to string: %s", err.Error())
+			// 	m.textInput.Reset()
+			// 	return m, nil
+			// }
 
-			return NewSwaggerPage(pathes), nil
+			return NewSwaggerPage(pathesMethodes), nil
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		}

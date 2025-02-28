@@ -1,19 +1,34 @@
 package pages
 
 import (
+	"fmt"
+
+	"github.com/Tacostrophe/go-swagger/structs"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type swaggerPage struct {
-	pathes string
+	pathes    []structs.PathMethod
+	textInput textinput.Model
+	tip       string
 }
 
-func NewSwaggerPage(pathes string) swaggerPage {
-	return swaggerPage{pathes: pathes}
+func NewSwaggerPage(pathes []structs.PathMethod) swaggerPage {
+	ti := textinput.New()
+	// ti.Placeholder = "path/to/swagger.json"
+	ti.Focus()
+	// ti.CharLimit = 20
+	ti.Width = 64
+	return swaggerPage{
+		pathes:    pathes,
+		textInput: ti,
+		tip:       "",
+	}
 }
 
 func (m swaggerPage) Init() tea.Cmd {
-	return nil
+	return textinput.Blink
 }
 
 func (m swaggerPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -36,5 +51,10 @@ func (m swaggerPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m swaggerPage) View() string {
-	return m.pathes
+	return fmt.Sprintf(
+		"Filter: %s\n\n%s\n%s\n",
+		m.textInput.View(),
+		m.tip,
+		"(esc to quit)",
+	)
 }
