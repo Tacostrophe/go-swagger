@@ -7,7 +7,7 @@ type (
 
 	PathesTagged struct {
 		tagName string
-		pathes []PathMethod
+		pathes  []PathMethod
 	}
 
 	PathMethod struct {
@@ -21,14 +21,15 @@ type (
 	}
 )
 
-func NewPathesTagged(pathes []PathMethod) 
-
-func (p *Pathes) Get() []PathMethod {
-	return p.pathes
+func NewPathesTagged(pathes []PathMethod) {
 }
 
-func (p *Pathes) Filter(filters string) []PathMethod {
-	if filters == "" {
-		return p.pathes
-	}
-}
+// func (p *Pathes) Get() []PathMethod {
+// 	return p.pathes
+// }
+
+// func (p *Pathes) Filter(filters string) []PathMethod {
+// 	if filters == "" {
+// 		return p.pathes
+// 	}
+// }

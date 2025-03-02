@@ -3,24 +3,25 @@ package pages
 import (
 	"fmt"
 
-	EP "github.com/Tacostrophe/go-swagger/extract_pathes"
-	RS "github.com/Tacostrophe/go-swagger/read_swagger"
+	"github.com/Tacostrophe/go-swagger/usecases"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type initialPage struct {
+	usecase   usecases.SwaggerUsecase
 	textInput textinput.Model
 	tip       string
 }
 
-func NewInitialPage() initialPage {
+func NewInitialPage(usecase usecases.SwaggerUsecase) initialPage {
 	ti := textinput.New()
 	ti.Placeholder = "path/to/swagger.json"
 	ti.Focus()
 	// ti.CharLimit = 20
 	ti.Width = 32
 	return initialPage{
+		usecase:   usecase,
 		textInput: ti,
 		tip:       "",
 	}
@@ -38,30 +39,28 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyEnter:
 			// m.tip = fmt.Sprintf("Looking for %q", m.textInput.Value())
-			swaggerPathes, _, err := RS.ReadSwagger(m.textInput.Value())
-			if err != nil {
-				m.tip = fmt.Sprintf("error: can't read swagger: %s", err.Error())
-				m.textInput.Reset()
-				return m, nil
-			}
-
-			// extract pathes from swagger
-			pathesMethodes, err := EP.ExtractPathes(swaggerPathes)
-			if err != nil {
-				m.tip = fmt.Sprintf("error: can't extract pathes: %s", err.Error())
-				m.textInput.Reset()
-				return m, nil
-			}
-
-			// transform array of pathes to human readable list with idx
-			// pathes, err := TS.TransformPathesToString(pathesMethodes)
+			// swaggerPathes, _, err := RS.ReadSwagger(m.textInput.Value())
 			// if err != nil {
-			// 	m.tip = fmt.Sprintf("error: can't transform pathes to string: %s", err.Error())
+			// 	m.tip = fmt.Sprintf("error: can't read swagger: %s", err.Error())
 			// 	m.textInput.Reset()
 			// 	return m, nil
 			// }
 
-			return NewSwaggerPage(pathesMethodes), nil
+			// extract pathes from swagger
+			// pathesMethodes, err := EP.ExtractPathes(swaggerPathes)
+			// if err != nil {
+			// 	m.tip = fmt.Sprintf("error: can't extract pathes: %s", err.Error())
+			// 	m.textInput.Reset()
+			// 	return m, nil
+			// }
+
+			if err := m.usecase.Init(m.textInput.Value()); err != nil {
+				m.tip = fmt.Sprintf("error: can't parse file: %s", err.Error())
+				m.textInput.Reset()
+				return m, nil
+			}
+
+			return NewSwaggerPage(m.usecase), nil
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		}
