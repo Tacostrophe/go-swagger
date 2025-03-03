@@ -22,7 +22,7 @@ type initialPage struct {
 func NewInitialPage(usecase usecases.SwaggerUsecase) initialPage {
 	ti := textinput.New()
 	ti.Placeholder = "path/to/swagger.json"
-	ti.ShowSuggestions = true
+	// ti.ShowSuggestions = true
 	ti.Focus()
 	// ti.CharLimit = 20
 	ti.Width = 32
@@ -89,6 +89,12 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
+			suggestions := m.textInput.AvailableSuggestions()
+			if len(suggestions) == 0 {
+				m.tip = "no file suits provided path"
+				return m, nil
+			}
+
 			if err := m.usecase.Init(m.textInput.Value()); err != nil {
 				m.tip = fmt.Sprintf("error: can't parse file: %s", err.Error())
 				m.textInput.Reset()
@@ -99,8 +105,42 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewSwaggerPage(m.usecase), nil
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
+		case tea.KeyCtrlP:
+			suggestions := m.textInput.AvailableSuggestions()
+			if len(suggestions) == 0 {
+				m.tip = "no file suits provided path"
+				return m, nil
+			}
+
+			if m.suggestionIdx == nil {
+				m.suggestionIdx = new(int)
+				*m.suggestionIdx = len(suggestions) - 1
+				m.textInput.SetValue(suggestions[*m.suggestionIdx])
+				m.textInput.CursorEnd()
+
+				return m, nil
+			}
+
+			if *m.suggestionIdx == 0 {
+				m.suggestionIdx = nil
+				m.textInput.SetValue(m.lastInput)
+				m.textInput.CursorEnd()
+
+				return m, nil
+			}
+
+			*m.suggestionIdx--
+			m.textInput.SetValue(suggestions[*m.suggestionIdx])
+			m.textInput.CursorEnd()
+
+			return m, nil
 		case tea.KeyCtrlN:
 			suggestions := m.textInput.AvailableSuggestions()
+			if len(suggestions) == 0 {
+				m.tip = "no file suits provided path"
+				return m, nil
+			}
+
 			if m.suggestionIdx == nil {
 				m.suggestionIdx = new(int)
 				*m.suggestionIdx = 0
@@ -148,20 +188,48 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m initialPage) View() string {
-	suggestions := make([]string, len(m.textInput.AvailableSuggestions()))
-	for i, suggestion := range m.textInput.AvailableSuggestions() {
-		checkMark := "[ ]"
-		if m.suggestionIdx != nil && *m.suggestionIdx == i {
-			checkMark = "[X]"
+	availableSuggestions := m.textInput.AvailableSuggestions()
+	suggestionsString := ""
+	suggestionPagination := ""
+
+	if len(availableSuggestions) > 0 {
+		if m.suggestionIdx != nil {
+			suggestionPagination = "  " + strings.Repeat(".", *m.suggestionIdx) + "x" + strings.Repeat(".", len(availableSuggestions)-*m.suggestionIdx-1)
+		} else {
+			suggestionPagination = "  " + strings.Repeat(".", len(availableSuggestions))
 		}
-		suggestionString := fmt.Sprintf("%s %s", checkMark, suggestion)
-		suggestions[i] = suggestionString
+		suggestionsPerPage := 3
+		suggestions := make([]string, suggestionsPerPage)
+		var pageStartIdx int
+		if m.suggestionIdx == nil {
+			pageStartIdx = 0
+		} else {
+			pageStartIdx = *m.suggestionIdx / suggestionsPerPage * suggestionsPerPage
+		}
+		var pageEndIdx int = pageStartIdx + suggestionsPerPage
+		if len(availableSuggestions) < pageEndIdx {
+			pageEndIdx = len(availableSuggestions)
+		}
+
+		pageWithSuggestion := m.textInput.AvailableSuggestions()[pageStartIdx:pageEndIdx]
+
+		for i, suggestion := range pageWithSuggestion {
+			checkMark := " "
+			if m.suggestionIdx != nil && *m.suggestionIdx == i+pageStartIdx {
+				checkMark = ">"
+			}
+			suggestionString := fmt.Sprintf("%s %s", checkMark, suggestion)
+			suggestions[i] = suggestionString
+		}
+
+		suggestionsString = strings.Join(suggestions, "\n")
 	}
 
 	return fmt.Sprintf(
-		"Enter path to swagger\n\n%s\n\n%s\n%s\n%s\n",
+		"Enter path to swagger\n\n%s\n\n%s\n%s\n%s\n%s\n",
 		m.textInput.View(),
-		strings.Join(suggestions, ", "),
+		suggestionsString,
+		suggestionPagination,
 		m.tip,
 		"(esc to quit)",
 	)
