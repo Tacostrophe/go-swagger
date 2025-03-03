@@ -16,7 +16,7 @@ type (
 		FirstTag string
 	}
 
-	Swagger struct {
+	Swagger struct { // i don't delete it just to maintain old logic without errors until i delete them
 		Paths map[string]map[string]interface{} `json: "paths"`
 	}
 )
