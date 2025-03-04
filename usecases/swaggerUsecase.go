@@ -49,6 +49,15 @@ func (u *swaggerFromFileV1) Init(filePath string) error {
 }
 
 func readSwagger(filePath string) (swagger, error) {
+	if strings.HasPrefix(filePath, "~") {
+		homeDirPath, err := os.UserHomeDir()
+		if err != nil {
+			return swagger{}, err
+		}
+
+		filePath = strings.Replace(filePath, "~", homeDirPath, 1)
+	}
+
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
 		return swagger{}, err
