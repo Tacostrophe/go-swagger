@@ -50,19 +50,37 @@ func (m initialPage) Init() tea.Cmd {
 
 func getSuggestions(input string) ([]string, error) {
 	pwd := "./"
+	if strings.HasPrefix(input, "/") || strings.HasPrefix(input, "~") {
+		pwd = ""
+	}
 
-	pathRegexp := regexp.MustCompile(`^(?P<dir>.+/)?(?P<file>[^/]*)$`)
+	pathRegexp := regexp.MustCompile(`^(?P<dir>.*/)?(?P<file>[^/]*)$`)
 	pathMatches := pathRegexp.FindStringSubmatch(input)
 	dirIndex := pathRegexp.SubexpIndex("dir")
 	fileIndex := pathRegexp.SubexpIndex("file")
 
-	dirPath := pathMatches[dirIndex]
-	fileName := pathMatches[fileIndex]
+	dirPath := ""
+	fileName := ""
+
+	if dirIndex < len(pathMatches) {
+		dirPath = pathMatches[dirIndex]
+	}
+	if fileIndex < len(pathMatches) {
+		fileName = pathMatches[fileIndex]
+	}
 
 	if len(dirPath) != 0 && !strings.HasSuffix(dirPath, "/") {
 		dirPath += "/"
 	}
 	path := fmt.Sprintf("%s%s", pwd, dirPath)
+	if strings.HasPrefix(path, "~") {
+		homeDirPath, err := os.UserHomeDir()
+		if err != nil {
+			return []string{}, err
+		}
+
+		path = strings.Replace(path, "~", homeDirPath, 1)
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return []string{}, err
@@ -256,7 +274,11 @@ func (m initialPage) View() string {
 			pathRegexp := regexp.MustCompile(`^(?P<dir>.+/)?(?P<file>[^/]*)$`)
 			pathMatches := pathRegexp.FindStringSubmatch(m.textInput.Value())
 			dirIndex := pathRegexp.SubexpIndex("dir")
-			dirPath := pathMatches[dirIndex]
+			dirPath := ""
+
+			if dirIndex < len(pathMatches) {
+				dirPath = pathMatches[dirIndex]
+			}
 
 			suggestionFile := suggestion
 			if dirPath != "" {

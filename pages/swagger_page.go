@@ -22,7 +22,7 @@ func NewSwaggerPage(usecase usecases.SwaggerUsecase) swaggerPage {
 	// ti.CharLimit = 20
 	ti.Width = 64
 	pathes := usecase.GetFilteredPathes("")
-	tip := fmt.Sprintf("found pathes %d", len(pathes))
+	tip := ""
 
 	return swaggerPage{
 		usecase:   usecase,
