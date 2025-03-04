@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/Tacostrophe/go-swagger/usecases"
@@ -96,15 +97,17 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			if err := m.usecase.Init(m.textInput.Value()); err != nil {
-				m.tip = fmt.Sprintf("error: can't parse file: %s", err.Error())
 				m.textInput.Reset()
 
+				m.tip = fmt.Sprintf("error: can't parse file: %s", err.Error())
 				return m, nil
 			}
 
 			return NewSwaggerPage(m.usecase), nil
+
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
+
 		case tea.KeyCtrlP:
 			suggestions := m.textInput.AvailableSuggestions()
 			if len(suggestions) == 0 {
@@ -118,6 +121,7 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(suggestions[*m.suggestionIdx])
 				m.textInput.CursorEnd()
 
+				m.tip = ""
 				return m, nil
 			}
 
@@ -126,6 +130,7 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(m.lastInput)
 				m.textInput.CursorEnd()
 
+				m.tip = ""
 				return m, nil
 			}
 
@@ -133,11 +138,14 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue(suggestions[*m.suggestionIdx])
 			m.textInput.CursorEnd()
 
+			m.tip = ""
 			return m, nil
+
 		case tea.KeyCtrlN:
 			suggestions := m.textInput.AvailableSuggestions()
 			if len(suggestions) == 0 {
 				m.tip = "no file suits provided path"
+
 				return m, nil
 			}
 
@@ -147,6 +155,7 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(suggestions[*m.suggestionIdx])
 				m.textInput.CursorEnd()
 
+				m.tip = ""
 				return m, nil
 			}
 
@@ -155,6 +164,7 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(m.lastInput)
 				m.textInput.CursorEnd()
 
+				m.tip = ""
 				return m, nil
 			}
 
@@ -162,10 +172,14 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue(suggestions[*m.suggestionIdx])
 			m.textInput.CursorEnd()
 
+			m.tip = ""
 			return m, nil
-		// case tea.KeyRunes:
-		default:
-			m.textInput, cmd = m.textInput.Update(msg)
+
+		case tea.KeyCtrlL:
+			if m.suggestionIdx == nil {
+				return m, nil
+			}
+
 			suggestions, err := getSuggestions(m.textInput.Value())
 			if err != nil {
 				m.tip = err.Error()
@@ -173,14 +187,33 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.textInput.SetSuggestions(suggestions)
 			m.suggestionIdx = nil
-			m.lastInput = m.textInput.Value()
+
+			return m, nil
+
+		default:
+			m.textInput, cmd = m.textInput.Update(msg)
+			suggestions, err := getSuggestions(m.textInput.Value())
+			if err != nil {
+				m.tip = err.Error()
+				return m, nil
+			}
+
+			if !slices.Contains(suggestions, m.textInput.Value()) {
+				m.textInput.SetSuggestions(suggestions)
+				m.suggestionIdx = nil
+			}
+
+			if m.lastInput != m.textInput.Value() && m.suggestionIdx == nil {
+				m.lastInput = m.textInput.Value()
+				m.tip = ""
+			}
 
 			return m, cmd
 		}
 
 	// We handle errors just like any other message
 	case error:
-		// m.err = msg
+		m.tip = msg.Error()
 		return m, nil
 	}
 
@@ -189,10 +222,12 @@ func (m initialPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m initialPage) View() string {
 	availableSuggestions := m.textInput.AvailableSuggestions()
-	suggestionsString := ""
-	suggestionPagination := ""
 
+	suggestionsBlock := ""
 	if len(availableSuggestions) > 0 {
+		suggestionsString := ""
+		suggestionPagination := ""
+
 		if m.suggestionIdx != nil {
 			suggestionPagination = "  " + strings.Repeat(".", *m.suggestionIdx) + "x" + strings.Repeat(".", len(availableSuggestions)-*m.suggestionIdx-1)
 		} else {
@@ -218,19 +253,41 @@ func (m initialPage) View() string {
 			if m.suggestionIdx != nil && *m.suggestionIdx == i+pageStartIdx {
 				checkMark = ">"
 			}
-			suggestionString := fmt.Sprintf("%s %s", checkMark, suggestion)
+			pathRegexp := regexp.MustCompile(`^(?P<dir>.+/)?(?P<file>[^/]*)$`)
+			pathMatches := pathRegexp.FindStringSubmatch(m.textInput.Value())
+			dirIndex := pathRegexp.SubexpIndex("dir")
+			dirPath := pathMatches[dirIndex]
+
+			suggestionFile := suggestion
+			if dirPath != "" {
+				suggestionFile = strings.Replace(suggestionFile, dirPath, "", 1)
+			}
+
+			suggestionString := fmt.Sprintf("%s %s", checkMark, suggestionFile)
 			suggestions[i] = suggestionString
 		}
 
 		suggestionsString = strings.Join(suggestions, "\n")
+		suggestionsManual := `next/previous - ctrl+n/p, choose - ctrl+l`
+		suggestionsBlock = fmt.Sprintf(
+			"suggestions(%s):\n%s\n%s\n",
+			suggestionsManual,
+			suggestionsString,
+			suggestionPagination,
+		)
+
+	}
+
+	tip := ""
+	if m.tip != "" {
+		tip = fmt.Sprintf("tip: %s\n", m.tip)
 	}
 
 	return fmt.Sprintf(
-		"Enter path to swagger\n\n%s\n\n%s\n%s\n%s\n%s\n",
+		"Enter path to swagger:\n\n%s\n\n%s%s%s\n",
 		m.textInput.View(),
-		suggestionsString,
-		suggestionPagination,
-		m.tip,
+		suggestionsBlock,
+		tip,
 		"(esc to quit)",
 	)
 }
