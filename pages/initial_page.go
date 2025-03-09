@@ -290,7 +290,7 @@ func (m initialPage) View() string {
 		}
 
 		suggestionsString = strings.Join(suggestions, "\n")
-		suggestionsManual := `next/previous - ctrl+n/p, choose - ctrl+l`
+		suggestionsManual := `next/previous - ctrl+n/p`
 		suggestionsBlock = fmt.Sprintf(
 			"suggestions(%s):\n%s\n%s\n",
 			suggestionsManual,
