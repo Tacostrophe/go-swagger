@@ -2,6 +2,7 @@ package pages
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Tacostrophe/go-swagger/usecases"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -13,6 +14,7 @@ type swaggerPage struct {
 	pathes    []usecases.PathMethod
 	textInput textinput.Model
 	tip       string
+	pathIdx   int
 }
 
 func NewSwaggerPage(usecase usecases.SwaggerUsecase) swaggerPage {
@@ -29,6 +31,7 @@ func NewSwaggerPage(usecase usecases.SwaggerUsecase) swaggerPage {
 		pathes:    pathes,
 		textInput: ti,
 		tip:       tip,
+		pathIdx:   0,
 	}
 }
 
@@ -61,26 +64,48 @@ func (p swaggerPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (p swaggerPage) View() string {
-	header := fmt.Sprintf("Filter: %s", p.textInput.View())
-	footer := fmt.Sprintf("%s\n(esq to quit)\n", p.tip)
+	filterBlock := fmt.Sprintf("Filter: %s", p.textInput.View())
+	tipsBlock := fmt.Sprintf("%s\n(esq to quit)\n", p.tip)
 
-	body := ""
+	pathesBlock := ""
 	if len(p.pathes) == 0 {
-		body = "no pathes that suits filter found"
+		pathesBlock = "no pathes that suits filter found"
 	} else {
 		pathes := p.pathes
-		if len(pathes) > 10 {
-			pathes = pathes[:10]
+
+		pathesRows := ""
+
+		pathesPagination := "  " + strings.Repeat(".", p.pathIdx) + "x" + strings.Repeat(".", len(pathes)-p.pathIdx-1)
+		pathesPerPage := 10
+
+		var pageStartIdx int
+		pageStartIdx = p.pathIdx / pathesPerPage * pathesPerPage
+		var pageEndIdx int = pageStartIdx + pathesPerPage
+		if len(pathes) < pageEndIdx {
+			pageEndIdx = len(pathes)
 		}
-		for _, path := range pathes {
-			body += fmt.Sprintf("[ ] %s %s\n", path.Method, path.Path)
+
+		pageWithPathes := pathes[pageStartIdx:pageEndIdx]
+
+		for i, path := range pageWithPathes {
+			checkMark := " "
+			if p.pathIdx == i+pageStartIdx {
+				checkMark = ">"
+			}
+			pathesRows += fmt.Sprintf("%s [ ] %s %s\n", checkMark, path.Method, path.Path)
 		}
+
+		pathesBlock = fmt.Sprintf(
+			"%s\n%s",
+			pathesRows,
+			pathesPagination,
+		)
 	}
 
 	return fmt.Sprintf(
 		"%s\n%s\n%s",
-		header,
-		body,
-		footer,
+		filterBlock,
+		pathesBlock,
+		tipsBlock,
 	)
 }
