@@ -10,11 +10,14 @@ import (
 )
 
 type swaggerPage struct {
-	usecase   usecases.SwaggerUsecase
-	pathes    []usecases.PathMethod
+	usecase usecases.SwaggerUsecase
+
+	pathes       []usecases.PathMethod
+	chosenPathes map[usecases.PathMethod]bool
+	pathIdx      int
+
 	textInput textinput.Model
 	tip       string
-	pathIdx   int
 }
 
 func NewSwaggerPage(usecase usecases.SwaggerUsecase) swaggerPage {
@@ -24,14 +27,18 @@ func NewSwaggerPage(usecase usecases.SwaggerUsecase) swaggerPage {
 	// ti.CharLimit = 20
 	ti.Width = 64
 	pathes := usecase.GetFilteredPathes("")
+	chosenPathes := make(map[usecases.PathMethod]bool, len(pathes))
 	tip := ""
 
 	return swaggerPage{
-		usecase:   usecase,
-		pathes:    pathes,
+		usecase: usecase,
+
+		pathes:       pathes,
+		chosenPathes: chosenPathes,
+		pathIdx:      0,
+
 		textInput: ti,
 		tip:       tip,
-		pathIdx:   0,
 	}
 }
 
@@ -50,6 +57,28 @@ func (p swaggerPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// case tea.KeyRunes:
 			// 	p.pathes = p.usecase.GetFilteredPathes(p.textInput.Value())
 			// 	return p, nil
+		case tea.KeyCtrlN:
+			if p.pathIdx >= len(p.pathes)-1 {
+				p.pathIdx = 0
+				return p, nil
+			}
+			p.pathIdx++
+			return p, nil
+		case tea.KeyCtrlP:
+			if p.pathIdx <= 0 {
+				p.pathIdx = len(p.pathes) - 1
+				return p, nil
+			}
+			p.pathIdx--
+			return p, nil
+		case tea.KeyCtrlL:
+			path := p.pathes[p.pathIdx]
+			if isChosen, ok := p.chosenPathes[path]; isChosen && ok {
+				p.chosenPathes[path] = false
+			} else {
+				p.chosenPathes[path] = true
+			}
+			return p, nil
 		}
 
 	// We handle errors just like any other message
@@ -60,6 +89,12 @@ func (p swaggerPage) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	p.textInput, cmd = p.textInput.Update(msg)
 	p.pathes = p.usecase.GetFilteredPathes(p.textInput.Value())
+	if len(p.pathes) == 0 {
+		p.pathIdx = 0
+	} else if p.pathIdx >= len(p.pathes) {
+		p.pathIdx = len(p.pathes) - 1
+	}
+
 	return p, cmd
 }
 
@@ -88,11 +123,16 @@ func (p swaggerPage) View() string {
 		pageWithPathes := pathes[pageStartIdx:pageEndIdx]
 
 		for i, path := range pageWithPathes {
-			checkMark := " "
+			pointingMark := " "
+			checkMark := "[ ]"
+
 			if p.pathIdx == i+pageStartIdx {
-				checkMark = ">"
+				pointingMark = ">"
 			}
-			pathesRows += fmt.Sprintf("%s [ ] %s %s\n", checkMark, path.Method, path.Path)
+			if isChosen, ok := p.chosenPathes[path]; isChosen && ok {
+				checkMark = "[X]"
+			}
+			pathesRows += fmt.Sprintf("%s %s %s %s\n", pointingMark, checkMark, path.Method, path.Path)
 		}
 
 		pathesBlock = fmt.Sprintf(
