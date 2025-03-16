@@ -137,3 +137,100 @@ func (u *swaggerFromFileV1) GetFilteredPathes(filter string) []PathMethod {
 
 	return filteredPathes
 }
+
+func (u *swaggerFromFileV1) filterComponentsSchemas(swaggerComponentsSchemas map[string]interface{}, swaggerPathes map[string]map[string]interface{}) (filteredSwaggerComponentsSchemas map[string]interface{}) {
+	return
+}
+
+func (u *swaggerFromFileV1) filterTags(swaggerPathes map[string]map[string]interface{}) (filteredSwaggerTags []map[string]interface{}) {
+	swaggerTags := u.swagger["tags"].([]interface{})
+	if len(swaggerTags) == 0 {
+		return
+	}
+
+	tagsMap := make(map[string]map[string]interface{})
+	for _, tag := range swaggerTags {
+		tagName, ok := tag.(map[string]interface{})["name"]
+		if ok {
+			tagsMap[tagName.(string)] = tag.(map[string]interface{})
+		}
+	}
+
+	tagsToKeepMap := make(map[string]map[string]interface{})
+	for _, path := range swaggerPathes {
+		for _, method := range path {
+			methodTagsNames, ok := method.(map[string]interface{})["tags"].([]interface{})
+			if !ok {
+				continue
+			}
+			for _, tagName := range methodTagsNames {
+				tag, ok := tagsMap[tagName.(string)]
+				if ok {
+					tagsToKeepMap[tagName.(string)] = tag
+				}
+			}
+		}
+	}
+
+	filteredSwaggerTags = make([]map[string]interface{}, 0, len(tagsToKeepMap))
+	for _, tag := range tagsToKeepMap {
+		filteredSwaggerTags = append(filteredSwaggerTags, tag)
+	}
+
+	sort.Slice(filteredSwaggerTags, func(i, j int) bool {
+		return filteredSwaggerTags[i]["name"].(string) < filteredSwaggerTags[j]["name"].(string)
+	})
+
+	return
+}
+
+func (u *swaggerFromFileV1) filterPathes(pathesToKeep []PathMethod) (map[string]map[string]interface{}, error) {
+	incomeSwaggerPathesI, ok := u.swagger["paths"]
+	if !ok {
+		return nil, errors.New("swagger to update must have pathes")
+	}
+	swaggerPathes, ok := incomeSwaggerPathesI.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("didn't manage to cast swagger pathes to map")
+	}
+
+	filteredSwaggerPathes := make(map[string]map[string]interface{})
+	for _, pathToKeep := range pathesToKeep {
+		_, ok := filteredSwaggerPathes[pathToKeep.Path]
+		if !ok {
+			filteredSwaggerPathes[pathToKeep.Path] = map[string]interface{}{}
+		}
+		currentPathMethod := swaggerPathes[pathToKeep.Path].(map[string]interface{})
+		filteredSwaggerPathes[pathToKeep.Path][pathToKeep.Method] = currentPathMethod[pathToKeep.Method]
+	}
+
+	return filteredSwaggerPathes, nil
+}
+
+func (u *swaggerFromFileV1) UpdateSwagger(pathesToKeep []PathMethod) error {
+	swagger := u.swagger
+	swaggerPathes, err := u.filterPathes(pathesToKeep)
+	if err != nil {
+		return err
+	}
+
+	swaggerTags := u.filterTags(swaggerPathes)
+
+	if incomeSwaggerComponents, hasComponents := swagger["components"].(map[string]interface{}); hasComponents {
+		if incomeSwaggerComponentsSchemas, hasSchemas := incomeSwaggerComponents["schemas"].(map[string]interface{}); hasSchemas {
+			if len(incomeSwaggerComponentsSchemas) > 0 {
+				filteredSwaggerComponentsSchemas := u.filterComponentsSchemas(incomeSwaggerComponentsSchemas, swaggerPathes)
+				incomeSwaggerComponents["schemas"] = filteredSwaggerComponentsSchemas
+				swagger["components"] = incomeSwaggerComponents
+			}
+		}
+	}
+
+	swagger["paths"] = swaggerPathes
+	if swaggerTags != nil {
+		swagger["tags"] = swaggerTags
+	}
+	u.swagger = swagger
+
+	return nil
+}
