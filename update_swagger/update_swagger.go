@@ -2,7 +2,9 @@ package update_swagger
 
 import (
 	"errors"
+	"fmt"
 	"sort"
+	"strings"
 
 	S "github.com/Tacostrophe/go-swagger/structs"
 )
@@ -71,13 +73,25 @@ func getRefsFromMap(currentMap map[string]interface{}) (refs map[string]bool) {
 		}
 
 		subMap, isMap := value.(map[string]interface{})
-		if !isMap {
-			continue
+		if isMap {
+			subMapRefs := getRefsFromMap(subMap)
+			for refName := range subMapRefs {
+				refs[refName] = true
+			}
 		}
 
-		subMapRefs := getRefsFromMap(subMap)
-		for refName := range subMapRefs {
-			refs[refName] = true
+		subArr, isArr := value.([]interface{})
+		if isArr {
+			for _, subArrMap := range subArr {
+				subMap, isMap := subArrMap.(map[string]interface{})
+				if !isMap {
+					continue
+				}
+				subArrMapRefs := getRefsFromMap(subMap)
+				for refName := range subArrMapRefs {
+					refs[refName] = true
+				}
+			}
 		}
 	}
 
@@ -96,15 +110,56 @@ func getRefsFromPathes(pathes map[string]map[string]interface{}) (refs map[strin
 	return
 }
 
+func populateSchemasRefsWithSubrefs(schemas map[string]interface{}, refs map[string]bool) map[string]bool {
+	initialRefLen := len(refs)
+	if initialRefLen == 0 {
+		return refs
+	}
+
+	subRefs := make(map[string]bool)
+	refNamePrefix := "#/components/schemas/"
+	for refName := range refs {
+		schemaName := strings.TrimPrefix(refName, refNamePrefix)
+		schema, hasSchema := schemas[schemaName]
+		if !hasSchema {
+			fmt.Printf("warning: missing ref schema %s", schemaName)
+			continue
+		}
+
+		schemaMap, isMap := schema.(map[string]interface{})
+		if isMap {
+			schemaSubRefs := getRefsFromMap(schemaMap)
+			for subRefName := range schemaSubRefs {
+				if _, isInRef := refs[subRefName]; !isInRef {
+					subRefs[subRefName] = true
+				}
+			}
+		}
+	}
+
+	if len(subRefs) > 0 {
+		subRefs = populateSchemasRefsWithSubrefs(schemas, subRefs)
+		for subRefName := range subRefs {
+			refs[subRefName] = true
+		}
+	}
+
+	return refs
+}
+
 func filterComponentsSchemas(swaggerComponentsSchemas map[string]interface{}, swaggerPathes map[string]map[string]interface{}) (filteredSwaggerComponentsSchemas map[string]interface{}) {
 	filteredSwaggerComponentsSchemas = make(map[string]interface{})
+	refNamePrefix := "#/components/schemas/"
+
 	refs := getRefsFromPathes(swaggerPathes)
+	refs = populateSchemasRefsWithSubrefs(swaggerComponentsSchemas, refs)
 	for schemaName, schema := range swaggerComponentsSchemas {
-		refName := "#/components/schemas/" + schemaName
+		refName := refNamePrefix + schemaName
 		if _, hasRef := refs[refName]; hasRef {
 			filteredSwaggerComponentsSchemas[schemaName] = schema
 		}
 	}
+
 	return
 }
 
